@@ -1,13 +1,19 @@
-# Upgrade pip al inicio
+# Upgrade pip (latest)
 pip
 
+# Core
 fastapi
 uvicorn
 supabase
+
+# Matching/ML
 sentence-transformers
 fuzzywuzzy
 python-levenshtein
 numpy
 pandas
-# Torch CPU-only (sin versión; pip toma latest ~2.5.0+cpu)
-torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Torch CPU-only (latest, sin pins)
+--index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
