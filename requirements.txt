@@ -1,19 +1,16 @@
-# Upgrade pip (latest)
-pip
-
 # Core
-fastapi
-uvicorn
-supabase
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+supabase>=2.0.0
 
 # Matching/ML
-sentence-transformers
-fuzzywuzzy
-python-levenshtein
-numpy
-pandas
+sentence-transformers>=2.2.0
+fuzzywuzzy>=0.18.0
+python-levenshtein>=0.25.0
+numpy>=1.24.0
+pandas>=2.0.0
 
-# Torch CPU-only (latest, sin pins)
+# Torch CPU-only
 --index-url https://download.pytorch.org/whl/cpu
-torch
-torchvision
+torch>=2.0.0
+torchvision>=0.15.0
