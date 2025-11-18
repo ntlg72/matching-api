@@ -1,13 +1,13 @@
-# Upgrade pip primero (opcional, pero ayuda)
-pip==25.3  # Al top, para evitar el notice
+# Upgrade pip al inicio
+pip
 
-fastapi==0.115.0
-uvicorn==0.30.6
-supabase==2.4.0
-sentence-transformers==3.0.1
-fuzzywuzzy==0.18.0
-python-levenshtein==0.25.1
-numpy==1.26.4
-pandas==2.2.3  # Upgrade a latest compatible con 3.12/3.13
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.2+cpu
+fastapi
+uvicorn
+supabase
+sentence-transformers
+fuzzywuzzy
+python-levenshtein
+numpy
+pandas
+# Torch CPU-only (sin versión; pip toma latest ~2.5.0+cpu)
+torch torchvision --index-url https://download.pytorch.org/whl/cpu
