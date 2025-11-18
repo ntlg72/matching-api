@@ -16,7 +16,22 @@ app = FastAPI(title="Matching API")
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+# Carga modelo en runtime (no en build)
+def load_model():
+    from sentence_transformers import SentenceTransformer
+    # Usa modelo más ligero: 'all-MiniLM-L6-v2' (22 MB vs 118 MB de multilingual)
+    model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='/tmp/hf_cache')
+    return model
+
+# En tus funciones (e.g., preprocesar_*), usa global o lazy load
+model = None  # Global
+
+def get_model():
+    global model
+    if model is None:
+        model = load_model()
+    return model
 
 # Función para test conexión (opcional)
 def test_supabase():
@@ -60,8 +75,8 @@ def cargar_oportunidades() -> pd.DataFrame:
 def preprocesar_joven(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
-    df['experiencia_embedding'] = df['detail_experiencia'].apply(lambda x: model.encode(str(x)) if pd.notna(x) else np.zeros(384))
-    df['motivaciones_embedding'] = df['detail_motivaciones'].apply(lambda x: model.encode(str(x)) if pd.notna(x) else np.zeros(384))
+    df['experiencia_embedding'] = df['detail_experiencia'].apply(lambda x: get_model().encode(str(x)) if pd.notna(x) else np.zeros(384))
+    df['motivaciones_embedding'] = df['detail_motivaciones'].apply(lambda x: get_model().encode(str(x)) if pd.notna(x) else np.zeros(384))
     df['ingresos_num'] = df['detail_ingresos_mensuales'].map(lambda x: {'bajo': 500, 'medio': 1000, 'alto': 2000}.get(str(x).lower(), 750))
     df['regiones_set'] = df['detail_preferencias_ubicacion'].apply(lambda x: set(x) if isinstance(x, list) else set())
     df['idiomas_set'] = df['detail_idiomas'].apply(lambda x: set(x) if isinstance(x, list) else set())
@@ -73,7 +88,7 @@ def preprocesar_joven(df: pd.DataFrame) -> pd.DataFrame:
 def preprocesar_oportunidades(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
-    df['desc_embedding'] = df['description'].apply(lambda x: model.encode(str(x)) if pd.notna(x) else np.zeros(384))
+    df['desc_embedding'] = df['description'].apply(lambda x: get_model().encode(str(x)) if pd.notna(x) else np.zeros(384))
     df['regiones'] = df.apply(lambda row: [row.get('mun_province', '')] if row['owner_type'] == 'municipio' else [row.get('province', '')], axis=1)
     df['regiones_set'] = df['regiones'].apply(lambda x: set(x) if isinstance(x, list) else set())
     df['sectores_set'] = df.apply(lambda row: set(row.get('emp_sectors', [])) if row['owner_type'] == 'empresa' else set(row.get('mun_main_economic_sectors', [])), axis=1)

@@ -6,4 +6,6 @@ fuzzywuzzy==0.18.0
 python-levenshtein==0.25.1
 numpy==1.26.4
 pandas==2.2.2
-torch==2.4.1
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
