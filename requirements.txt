@@ -1,0 +1,7 @@
+supabase==2.4.0
+sentence-transformers==3.0.1
+fuzzywuzzy==0.18.0
+python-levenshtein==0.25.1
+numpy==1.26.4
+pandas==2.2.2
+torch==2.4.1

@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/match.py": {
+      "runtime": "python3.12",
+      "maxDuration": 30
+    }
+  }
+}
