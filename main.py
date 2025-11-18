@@ -1,4 +1,5 @@
-import json
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 import os
 import numpy as np
 import pandas as pd
@@ -9,12 +10,12 @@ from fuzzywuzzy import fuzz
 from datetime import datetime, timezone
 from uuid import uuid4
 
-# Env vars de Vercel
+app = FastAPI(title="Matching API")
+
+# Env vars
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Carga el modelo una vez (global para perf)
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 # Función para test conexión (opcional)
@@ -160,29 +161,32 @@ def match_score_heuristic(usuario: Dict, oportunidad: Dict) -> Tuple[float, str,
     return min(score, 1.0), oportunidad.get('title', 'Sin título'), tipo, razon_final, razones
 
 # Handler para Vercel (responde a GET /api/match?user_id=...)
-def main(request):
+
+@app.get("/health")
+def health_check():
     try:
-        # Test conexión
-        test_supabase()
+        # Test Supabase
+        response = supabase.table('profiles').select('*').limit(1).execute()
+        return {"status": "OK", "message": "Supabase connected"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return json.dumps({'error': 'user_id requerido'}), 400, {'Content-Type': 'application/json'}
-
-        # Carga y procesa
+@app.get("/match")
+def get_matches(user_id: str = Query(..., description="User ID (UUID)")):
+    try:
+        # Tu lógica principal (carga DFs, calcula matches, inserta)
         df_jovenes = preprocesar_joven(cargar_jovenes())
         df_opps = preprocesar_oportunidades(cargar_oportunidades())
 
         if user_id not in df_jovenes['id'].values:
-            return json.dumps({'error': 'User no encontrado'}), 404, {'Content-Type': 'application/json'}
+            raise HTTPException(status_code=404, detail="User no encontrado")
 
         usuario = df_jovenes[df_jovenes['id'] == user_id].iloc[0].to_dict()
         matches = []
 
         for _, opp_row in df_opps.iterrows():
             opp_dict = opp_row.to_dict()
-            score, nombre_opp, tipo_match, razon_final, razones_lista = match_score_heuristic(usuario, opp_dict)
-
+            score, _, _, razon_final, _ = match_score_heuristic(usuario, opp_dict)
             if score > 0.2:
                 match_data = {
                     'id': str(uuid4()),
@@ -196,15 +200,13 @@ def main(request):
                 }
                 matches.append(match_data)
 
-        # Inserta en Supabase
         if matches:
             supabase.table('matches').insert(matches).execute()
 
-        return json.dumps({'matches': len(matches), 'data': matches}), 200, {'Content-Type': 'application/json'}
+        return {"matches": len(matches), "data": matches}
     except Exception as e:
-        return json.dumps({'error': str(e)}), 500, {'Content-Type': 'application/json'}
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Export para Vercel
-if __name__ == '__main__':
-    # Para testing local: python api/match.py
-    print("Handler listo para testing.")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
